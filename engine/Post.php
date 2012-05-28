@@ -177,6 +177,21 @@ class Post
         // Convert relative image references to absolute so index pages work
         $base_uri = '/' . $this->year . '/' . str_pad($this->month, 2, '0', STR_PAD_LEFT) . '/' . str_pad($this->day, 2, '0', STR_PAD_LEFT);
         
+        
+        // Locate the previous and next files.
+        $glob_pattern = dirname(dirname(dirname($this->source_filename))) . '/*/*/*' . Updater::$post_extension;
+		$dir = glob($glob_pattern);
+		sort($dir);
+		$previous_filename = false;
+		$next_filename = false;
+		foreach($dir as $filename){
+			if ($filename == $this->source_filename) {
+				$index = array_search($filename, $dir);
+				$previous_filename = $dir[$index - 1];
+				$next_filename = $dir[$index + 1];
+			}
+		}
+		
         return array_merge(
             $this->headers,
             array(
@@ -193,6 +208,8 @@ class Post
                 'post-absolute-permalink-or-link' => rtrim(self::$blog_url, '/') . (isset($this->headers['link']) && $this->headers['link'] ? $this->headers['link'] : $base_uri . '/' . $this->slug),
 
                 'post-is-first-on-date' => $this->is_first_post_on_this_date ? 'yes' : '',
+                'post-previous-md-file' => $previous_filename,
+                'post-next-md-file' => $next_filename,
             )
         );
     }
@@ -221,8 +238,30 @@ class Post
     {
         $post_data = $this->array_for_template();
         $post_data['post-is-first-on-date'] = true;
-
+		// $post_data['post-body'] .= $this->source_filename;
         $t = new Template(Updater::$permalink_template);
+        
+        // Copied from updater.
+        $previous_page_url = false;
+        if ($post_data['post-previous-md-file']) {
+	        $previous_filename_datestr = basename($post_data['post-previous-md-file']);
+	        $previous_page_url = 
+	        	'/' . substr($previous_filename_datestr, 0, 4) .
+	        	'/' . substr($previous_filename_datestr, 4, 2) .
+	        	'/' . substr($previous_filename_datestr, 6, 2) .
+	        	'/' . substr($previous_filename_datestr, 12, -(strlen(Updater::$post_extension)));
+        }
+        
+        $next_page_url = false;
+        if ($post_data['post-next-md-file']) {
+	        $next_filename_datestr = basename($post_data['post-next-md-file']);
+	        $next_page_url = 
+	        	'/' . substr($next_filename_datestr, 0, 4) .
+	        	'/' . substr($next_filename_datestr, 4, 2) .
+	        	'/' . substr($next_filename_datestr, 6, 2) .
+	        	'/' . substr($next_filename_datestr, 12, -(strlen(Updater::$post_extension)));
+        }
+        
         $t->content = array_merge(
             $post_data, 
             array(
@@ -234,8 +273,8 @@ class Post
                 'posts' => array($post_data),
                 'post' => $post_data,
                 'archives' => array(),
-                'previous_page_url' => false,
-                'next_page_url' => false,
+                'previous_page_url' => $previous_page_url,
+                'next_page_url' => $next_page_url,
             )
         );
         $output_html = $t->outputHTML();
