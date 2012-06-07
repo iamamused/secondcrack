@@ -387,6 +387,37 @@ class Updater
             self::$changes_were_written = true;
         }
     }
+
+    public static function update_sitemap()
+    {
+    
+        error_log("Updating sitempa with root: " . self::$dest_path);
+        $fileinfo = self::filelist(self::$dest_path, false);
+        
+        $map = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+   
+        
+        foreach ($fileinfo as $filename => $info) {
+            $file_info = pathinfo($filename);
+            if ($file_info['extension'] != '') continue;
+            
+            $loc = Post::$blog_url . trim(substring_after($filename, self::$dest_path),'/');
+            $mod = date ("F d Y H:i:s.", filemtime($filename));
+            
+            error_log("File for sitemap: $loc");
+
+            $map .= '<url><loc>'.$loc.'</loc><lastmod>'.$mod.'</lastmod></url>';
+        }
+        
+        $map .= '</urlset>';
+
+        $dest_filename = self::$dest_path . '/sitemap.xml';
+        $output_path = dirname($dest_filename);
+        if (! file_exists($output_path)) mkdir_as_parent_owner($output_path, 0755, true);
+        file_put_contents_as_dir_owner($dest_filename,$map);
+        self::$changes_were_written = true;
+
+    }
     
     public static function post_hooks($post)
     {
@@ -708,6 +739,9 @@ class Updater
                 );
             }
         }
+        
+        self::update_sitemap();
+
     }
 }
 

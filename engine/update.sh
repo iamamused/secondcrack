@@ -21,7 +21,7 @@ if mkdir "$BASH_LOCK_DIR" ; then
     trap "rmdir '$BASH_LOCK_DIR' 2>/dev/null ; exit" INT TERM EXIT
 
     echo "`date` -- updating secondcrack" >> $UPDATE_LOG
-    php -f "${SECONDCRACK_PATH}/engine/update.php" "$SCRIPT_LOCK_FILE"
+    php-5.3 -f "${SECONDCRACK_PATH}/engine/update.php" "$SCRIPT_LOCK_FILE"
 
     if [ "`which inotifywait`" != "" ] ; then
         while true ; do
@@ -32,7 +32,7 @@ if mkdir "$BASH_LOCK_DIR" ; then
                 echo "`date` -- updating secondcrack, $FORCE_CHECK_EVERY_SECONDS seconds elapsed" >> $UPDATE_LOG
             fi
             
-            php -f "${SECONDCRACK_PATH}/engine/update.php" "$SCRIPT_LOCK_FILE"
+            php-5.3 -f "${SECONDCRACK_PATH}/engine/update.php" "$SCRIPT_LOCK_FILE"
             while [ $? -eq 2 ] ; do 
                 echo "`date` -- updating secondcrack, last run performed writes" >> $UPDATE_LOG
                 php -f "${SECONDCRACK_PATH}/engine/update.php" "$SCRIPT_LOCK_FILE"
