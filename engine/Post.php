@@ -242,20 +242,18 @@ class Post
         $t = new Template(Updater::$permalink_template);
         
         // Copied from updater.
-        $previous_page_url = false;
         if ($post_data['post-previous-md-file']) {
 	        $previous_filename_datestr = basename($post_data['post-previous-md-file']);
-	        $previous_page_url = 
+	        $post_data['previous_page_url'] = 
 	        	'/' . substr($previous_filename_datestr, 0, 4) .
 	        	'/' . substr($previous_filename_datestr, 4, 2) .
 	        	'/' . substr($previous_filename_datestr, 6, 2) .
 	        	'/' . substr($previous_filename_datestr, 12, -(strlen(Updater::$post_extension)));
         }
         
-        $next_page_url = false;
         if ($post_data['post-next-md-file']) {
 	        $next_filename_datestr = basename($post_data['post-next-md-file']);
-	        $next_page_url = 
+	        $post_data['next_page_url'] = 
 	        	'/' . substr($next_filename_datestr, 0, 4) .
 	        	'/' . substr($next_filename_datestr, 4, 2) .
 	        	'/' . substr($next_filename_datestr, 6, 2) .
@@ -273,8 +271,6 @@ class Post
                 'posts' => array($post_data),
                 'post' => $post_data,
                 'archives' => array(),
-                'previous_page_url' => $previous_page_url,
-                'next_page_url' => $next_page_url,
             )
         );
         $output_html = $t->outputHTML();
@@ -292,8 +288,30 @@ class Post
     public static function write_index($dest_path, $title, $type, array $posts, $template = 'main.html', $archive_array = false, $seq_count = 0)
     {
         $posts_data = array();
-        foreach ($posts as $p) $posts_data[] = $p->array_for_template();
+        foreach ($posts as $p) {
+			$post_data = $p->array_for_template();
+	        if ($post_data['post-previous-md-file']) {
+		        $previous_filename_datestr = basename($post_data['post-previous-md-file']);
+		        $post_data['previous_page_url'] = 
+		        	'/' . substr($previous_filename_datestr, 0, 4) .
+		        	'/' . substr($previous_filename_datestr, 4, 2) .
+		        	'/' . substr($previous_filename_datestr, 6, 2) .
+		        	'/' . substr($previous_filename_datestr, 12, -(strlen(Updater::$post_extension)));
+	        }
+        
+	        if ($post_data['post-next-md-file']) {
+		        $next_filename_datestr = basename($post_data['post-next-md-file']);
+		        $post_data['next_page_url'] = 
+		        	'/' . substr($next_filename_datestr, 0, 4) .
+		        	'/' . substr($next_filename_datestr, 4, 2) .
+		        	'/' . substr($next_filename_datestr, 6, 2) .
+		        	'/' . substr($next_filename_datestr, 12, -(strlen(Updater::$post_extension)));
+	        }
 
+			$posts_data[] = $post_data;
+		}
+        
+        
         $t = new Template($template);
         $t->content = array(
             'page-title' => html_entity_decode(SmartyPants($title), ENT_QUOTES, 'UTF-8'),
@@ -305,7 +323,8 @@ class Post
             'previous_page_url' => false,
             'next_page_url' => $seq_count > 1 ? substring_after(substring_before($dest_path, '.', true), Updater::$dest_path) . '-2' : false,
             'archives' => $archive_array ? $archive_array : array(),
-        );
+        );        
+        
         $output_html = $t->outputHTML();
         
         $output_path = dirname($dest_path);
